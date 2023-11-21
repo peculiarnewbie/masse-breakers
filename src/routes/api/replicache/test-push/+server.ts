@@ -6,6 +6,7 @@ import { json } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
 import type { MutationV1, PushRequest, PushRequestV1 } from "replicache";
 
+//@ts-ignore
 export async function POST({ request }) {
 	const push: PushRequestV1 = await request.json();
 
