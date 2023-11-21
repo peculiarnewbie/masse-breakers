@@ -15,6 +15,24 @@
 
 	let websocket: WebSocket;
 
+	let chatWindow: HTMLElement;
+
+	function getCookie(cname: string) {
+		let name = cname + "=";
+		let decodedCookie = decodeURIComponent(document.cookie);
+		let ca = decodedCookie.split(";");
+		for (let i = 0; i < ca.length; i++) {
+			let c = ca[i];
+			while (c.charAt(0) == " ") {
+				c = c.substring(1);
+			}
+			if (c.indexOf(name) == 0) {
+				return c.substring(name.length, c.length);
+			}
+		}
+		return "";
+	}
+
 	const submitMessage = (e: SubmitEvent) => {
 		e.preventDefault();
 
@@ -28,6 +46,10 @@
 			order: order
 		});
 		messageValue = "";
+
+		setTimeout(() => {
+			chatWindow.scrollTop = chatWindow.scrollHeight;
+		}, 100);
 	};
 
 	const tryWebsocket = async () => {
@@ -81,26 +103,46 @@
 			}
 		);
 
+		setInterval(() => {
+			rep.pull();
+		}, 2000);
+
+		userValue = getCookie("chatName");
+
+		setTimeout(() => {
+			chatWindow.scrollTop = chatWindow.scrollHeight;
+		}, 100);
+
 		return () => {
 			websocket.close();
 			rep.close();
 		};
 	});
+
+	const scrollDown = () => {
+		chatWindow.scrollTop = chatWindow.scrollHeight;
+	};
 </script>
 
-<div class="flex flex-col gap-2 text-slate-200">
+<div class="flex w-screen flex-col items-center justify-center gap-2 text-slate-200">
 	{name}
-	<button class="w-64 rounded-md bg-slate-800 p-2" on:click={tryWebsocket}>Connect Websocket</button
-	>
-	<form on:submit={submitMessage} class="flex gap-3">
-		<input class="rounded-md p-2 text-slate-800" type="text" bind:value={userValue} />
-		<input class="rounded-md p-2 text-slate-800" type="text" bind:value={messageValue} />
-		<button>Post</button>
-	</form>
-	{#each sharedList as [item, message]}
-		<div class="flex">
-			<b>{message.from}: </b>
-			{message.content}
+	<div bind:this={chatWindow} class="h-[800px] w-96 overflow-y-scroll rounded-lg bg-slate-800">
+		<div class="flex w-full flex-col gap-4 p-4">
+			{#each sharedList as [item, message]}
+				<div class={` w-64  ${userValue == message.from ? " self-end" : "self-start"}`}>
+					<p class="text-sm">{message.from}</p>
+					<p class="rounded-md bg-slate-600 p-2">{message.content}</p>
+				</div>
+			{/each}
 		</div>
-	{/each}
+	</div>
+	<form on:submit={submitMessage} class="flex gap-3">
+		<!--
+			<button class="w-64 rounded-md bg-slate-800 p-2" on:click={tryWebsocket}>Connect Websocket</button>
+			<input class="rounded-md p-2 text-slate-800" type="text" bind:value={userValue} />
+		-->
+		<input class="w-80 rounded-md p-2 text-slate-800" type="text" bind:value={messageValue} />
+		<button>Send</button>
+	</form>
+	<button on:click={scrollDown}>scroll</button>
 </div>
