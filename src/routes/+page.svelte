@@ -56,13 +56,15 @@
 	{#if warning != ""}
 		<p class=" text-red-400">{warning}</p>
 	{/if}
-	<form on:submit={joinRoom}>
-		<input
+	<!--
+		<form on:submit={joinRoom}>
+			<input
 			class="rounded-md p-2 text-slate-600"
 			type="text"
 			name="chatName"
 			bind:value={personName}
-		/>
-		<button class="rounded-md bg-slate-800 px-6 py-2"> Chat Room </button>
-	</form>
+			/>
+			<button class="rounded-md bg-slate-800 px-6 py-2"> Chat Room </button>
+		</form>
+	-->
 </div>

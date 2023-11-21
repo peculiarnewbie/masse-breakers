@@ -136,13 +136,12 @@
 			{/each}
 		</div>
 	</div>
+	<!--
 	<form on:submit={submitMessage} class="flex gap-3">
-		<!--
-			<button class="w-64 rounded-md bg-slate-800 p-2" on:click={tryWebsocket}>Connect Websocket</button>
-			<input class="rounded-md p-2 text-slate-800" type="text" bind:value={userValue} />
-		-->
 		<input class="w-80 rounded-md p-2 text-slate-800" type="text" bind:value={messageValue} />
+			
 		<button>Send</button>
 	</form>
+-->
 	<button on:click={scrollDown}>scroll</button>
 </div>
