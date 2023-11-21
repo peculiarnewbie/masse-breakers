@@ -2,12 +2,11 @@ import { client, db, serverId } from "$lib/drizzle/dbClient";
 import { replicache_client, replicache_server, test_messages } from "$lib/drizzle/schema";
 
 import type { MessageWithID } from "$lib/types";
-import { json } from "@sveltejs/kit";
+import { json, type RequestEvent } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
 import type { MutationV1, PushRequest, PushRequestV1 } from "replicache";
 
-//@ts-ignore
-export async function POST({ request }) {
+export async function POST({ request }: RequestEvent) {
 	const push: PushRequestV1 = await request.json();
 
 	console.log("processing push", JSON.stringify(push));

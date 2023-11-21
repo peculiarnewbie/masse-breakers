@@ -1,11 +1,10 @@
-import { json } from "@sveltejs/kit";
+import { json, type RequestEvent } from "@sveltejs/kit";
 import { db, serverId } from "$lib/drizzle/dbClient";
 import type { PatchOperation, PullRequestV1, PullResponseV1 } from "replicache";
 import { replicache_client, replicache_server, test_messages } from "$lib/drizzle/schema";
 import { and, eq, gt } from "drizzle-orm";
 
-//@ts-ignore
-export async function POST({ request }) {
+export async function POST({ request }: RequestEvent) {
 	const pull: PullRequestV1 = await request.json();
 
 	console.log(`Processing pull`, JSON.stringify(pull));
@@ -25,10 +24,18 @@ export async function POST({ request }) {
 
 			console.log("from: ", fromVersion, "current: ", currentVersion);
 
-			if (currentVersion && fromVersion > currentVersion) {
-				throw new Error(
-					`fromVersion ${fromVersion} is from the future - aborting. This can happen in development if the server restarts. In that case, clear application data in browser and refresh.`
-				);
+			if (currentVersion) {
+				if (fromVersion > currentVersion) {
+					throw new Error(
+						`fromVersion ${fromVersion} is from the future - aborting. This can happen in development if the server restarts. In that case, clear application data in browser and refresh.`
+					);
+				} else if (fromVersion == currentVersion) {
+					return {
+						lastMutationIDChanges: {},
+						cookie: currentVersion,
+						patch: []
+					};
+				}
 			}
 
 			const changesRow = await db
@@ -46,9 +53,11 @@ export async function POST({ request }) {
 
 			console.log("changes", changesRow);
 
-			let lastMutationIdChanges: {
-				[k: string]: any;
-			};
+			let lastMutationIdChanges:
+				| {
+						[k: string]: any;
+				  }
+				| undefined;
 			if (changesRow[0]) {
 				if (changesRow.length == 1) {
 					lastMutationIdChanges = { [changesRow[0].id]: changesRow[0].lastMutationId };

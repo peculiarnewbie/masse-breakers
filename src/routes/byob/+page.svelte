@@ -13,6 +13,8 @@
 	let userValue = "";
 	let messageValue = "";
 
+	let websocket: WebSocket;
+
 	const submitMessage = (e: SubmitEvent) => {
 		e.preventDefault();
 
@@ -26,6 +28,27 @@
 			order: order
 		});
 		messageValue = "";
+	};
+
+	const tryWebsocket = async () => {
+		const response = await (
+			await fetch("/api/replicache/test-socket", {
+				method: "POST",
+				headers: {
+					Upgrade: "websocket"
+				}
+			})
+		).json();
+
+		websocket = response.webSocket;
+
+		if (websocket) {
+			websocket.addEventListener("message", (event) => {
+				console.log("Message received from server");
+				console.log(event.data);
+			});
+			websocket.send("MESSAGE");
+		}
 	};
 
 	onMount(() => {
@@ -59,13 +82,16 @@
 		);
 
 		return () => {
+			websocket.close();
 			rep.close();
 		};
 	});
 </script>
 
-<div class="flex flex-col text-slate-200">
+<div class="flex flex-col gap-2 text-slate-200">
 	{name}
+	<button class="w-64 rounded-md bg-slate-800 p-2" on:click={tryWebsocket}>Connect Websocket</button
+	>
 	<form on:submit={submitMessage} class="flex gap-3">
 		<input class="rounded-md p-2 text-slate-800" type="text" bind:value={userValue} />
 		<input class="rounded-md p-2 text-slate-800" type="text" bind:value={messageValue} />
