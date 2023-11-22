@@ -51,8 +51,6 @@ export async function POST({ request }: RequestEvent) {
 					)
 				);
 
-			console.log("changes", changesRow);
-
 			let lastMutationIdChanges:
 				| {
 						[k: string]: any;
@@ -70,8 +68,6 @@ export async function POST({ request }: RequestEvent) {
 					);
 				}
 			}
-
-			console.log("lastMutation");
 
 			const changed = await db
 				.select()
@@ -100,8 +96,6 @@ export async function POST({ request }: RequestEvent) {
 				}
 			}
 
-			console.log("patch", patch);
-
 			const body: PullResponseV1 = {
 				lastMutationIDChanges: lastMutationIdChanges ?? {},
 				cookie: currentVersion,
@@ -110,8 +104,6 @@ export async function POST({ request }: RequestEvent) {
 
 			return body;
 		});
-
-		console.log("response", response);
 
 		return json(response);
 	} catch (e) {

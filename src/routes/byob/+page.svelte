@@ -1,13 +1,12 @@
 <script lang="ts">
 	import "../../app.css";
-	import { Replicache, type WriteTransaction } from "replicache";
+	import { Replicache, dropAllDatabases, type WriteTransaction } from "replicache";
 	import { env } from "$env/dynamic/public";
 	import { onMount } from "svelte";
 	import type { Message, MessageWithID } from "$lib/types";
 	import { nanoid } from "nanoid";
 	import { PUBLIC_SOKETI_PUSHER_HOST, PUBLIC_SOKETI_PUSHER_KEY } from "$env/static/public";
 	import Pusher from "pusher-js";
-	import { ConsoleLogWriter } from "drizzle-orm";
 
 	let rep: Replicache;
 	let name = "dbName";
@@ -57,6 +56,18 @@
 		}, 100);
 	};
 
+	const clearAll = () => {
+		/*
+		sharedList.forEach((message) => {
+			rep.mutate.deleteMessage({ id: message[0] });
+		});
+		*/
+		sharedList.forEach((message) => {
+			let deleteId = message[0].split("/").slice(1).join("");
+			rep.mutate.deleteMessage({ id: deleteId });
+		});
+	};
+
 	onMount(() => {
 		rep = new Replicache({
 			name: "chat-user-id",
@@ -64,6 +75,10 @@
 			pushURL: "/api/replicache/test-push",
 			pullURL: "/api/replicache/test-pull",
 			mutators: {
+				async deleteMessage(tx: WriteTransaction, { id }: { id: string }) {
+					console.log("deleting");
+					await tx.del(`message/${id}`);
+				},
 				async createMessage(tx: WriteTransaction, { id, from, content, order }: MessageWithID) {
 					await tx.put(`message/${id}`, {
 						from,
@@ -88,15 +103,12 @@
 				}
 			);
 
-			/*
 			console.log("listening");
 
 			Pusher.logToConsole = true;
 			const pusher = new Pusher(PUBLIC_SOKETI_PUSHER_KEY, {
 				wsHost: PUBLIC_SOKETI_PUSHER_HOST,
 				cluster: "Replichat",
-				wsPort: 443,
-				wssPort: 443,
 				forceTLS: true,
 				disableStats: true,
 				enabledTransports: ["ws", "wss"]
@@ -106,7 +118,6 @@
 				console.log("got poked");
 				rep.pull();
 			});
-*/
 			userValue = getCookie("chatName");
 
 			setTimeout(() => {
@@ -114,10 +125,6 @@
 			}, 100);
 		}
 	});
-
-	const scrollDown = () => {
-		chatWindow.scrollTop = chatWindow.scrollHeight;
-	};
 </script>
 
 <div class="flex w-screen flex-col items-center justify-center gap-2 text-slate-200">
@@ -137,5 +144,5 @@
 
 		<button>Send</button>
 	</form>
-	<button on:click={scrollDown}>scroll</button>
+	<button on:click={clearAll}>clear</button>
 </div>

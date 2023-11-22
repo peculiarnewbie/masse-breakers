@@ -34,8 +34,6 @@ export async function POST({ request }: RequestEvent) {
 						.select({ lastMutationId: replicache_client.last_mutation_id })
 						.from(replicache_client)
 						.where(eq(replicache_client.id, clientId));
-
-					console.log("tf man", clientRow);
 					let lastMutationId = 0;
 					if (clientRow[0]) lastMutationId = clientRow[0].lastMutationId;
 
@@ -54,8 +52,6 @@ export async function POST({ request }: RequestEvent) {
 						);
 					}
 
-					console.log("Processing mutation:", JSON.stringify(mutation));
-
 					let args = mutation.args as MessageWithID;
 
 					switch (mutation.name) {
@@ -69,11 +65,16 @@ export async function POST({ request }: RequestEvent) {
 								version: nextVersion
 							});
 							break;
+						case "deleteMessage":
+							console.log("deleting", args.id);
+							await db
+								.update(test_messages)
+								.set({ deleted: 1, version: nextVersion })
+								.where(eq(test_messages.id, args.id));
+							break;
 						default:
 							throw new Error(`Unknown mutation: ${mutation.name}`);
 					}
-
-					console.log("setting", clientId, "last_mutation_id to", nextMutationId);
 
 					const mutated = await db
 						.update(replicache_client)
@@ -101,9 +102,18 @@ export async function POST({ request }: RequestEvent) {
 			}
 		}
 
-		await sendPoke();
-
-		console.log("poke sent");
+		// await sendPoke();
+		const pusher = new Pusher({
+			appId: env.SOKETI_PUSHER_APP_ID,
+			key: PUBLIC_SOKETI_PUSHER_KEY,
+			secret: env.SOKETI_PUSHER_SECRET,
+			host: PUBLIC_SOKETI_PUSHER_HOST,
+			cluster: "Replichat",
+			useTLS: true
+		});
+		const t0 = Date.now();
+		await pusher.trigger("chat", "poke", {});
+		console.log("Sent poke in", Date.now() - t0);
 
 		return json({});
 	} catch (e) {
@@ -112,19 +122,4 @@ export async function POST({ request }: RequestEvent) {
 	} finally {
 		console.log("Processed push in ", Date.now() - t0);
 	}
-}
-
-async function sendPoke() {
-	const pusher = new Pusher({
-		appId: env.SOKETI_PUSHER_APP_ID,
-		key: PUBLIC_SOKETI_PUSHER_KEY,
-		secret: env.SOKETI_PUSHER_SECRET,
-		host: PUBLIC_SOKETI_PUSHER_HOST,
-		cluster: "Replichat",
-		port: "433",
-		useTLS: true
-	});
-	const t0 = Date.now();
-	await pusher.trigger("chat", "poke", {});
-	console.log("Sent poke in", Date.now() - t0);
 }
