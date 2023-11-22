@@ -5,6 +5,9 @@
 	import { onMount } from "svelte";
 	import type { Message, MessageWithID } from "$lib/types";
 	import { nanoid } from "nanoid";
+	import { PUBLIC_SOKETI_PUSHER_HOST, PUBLIC_SOKETI_PUSHER_KEY } from "$env/static/public";
+	import Pusher from "pusher-js";
+	import { ConsoleLogWriter } from "drizzle-orm";
 
 	let rep: Replicache;
 	let name = "dbName";
@@ -12,8 +15,6 @@
 
 	let userValue = "";
 	let messageValue = "";
-
-	let websocket: WebSocket;
 
 	let chatWindow: HTMLElement;
 
@@ -36,6 +37,8 @@
 	const submitMessage = (e: SubmitEvent) => {
 		e.preventDefault();
 
+		console.log("push message");
+
 		const last = sharedList.length && sharedList[sharedList.length - 1][1];
 		const order = (last?.order ?? 0) + 1;
 
@@ -47,30 +50,11 @@
 		});
 		messageValue = "";
 
+		console.log("mutated?");
+
 		setTimeout(() => {
 			chatWindow.scrollTop = chatWindow.scrollHeight;
 		}, 100);
-	};
-
-	const tryWebsocket = async () => {
-		const response = await (
-			await fetch("/api/replicache/test-socket", {
-				method: "POST",
-				headers: {
-					Upgrade: "websocket"
-				}
-			})
-		).json();
-
-		websocket = response.webSocket;
-
-		if (websocket) {
-			websocket.addEventListener("message", (event) => {
-				console.log("Message received from server");
-				console.log(event.data);
-			});
-			websocket.send("MESSAGE");
-		}
 	};
 
 	onMount(() => {
@@ -90,33 +74,45 @@
 			}
 		});
 
-		name = rep.idbName;
+		if (rep) {
+			name = rep.idbName;
 
-		rep.subscribe(
-			async (tx) =>
-				(await tx.scan({ prefix: "message/" }).entries().toArray()) as [string, Message][],
-			{
-				onData: (list) => {
-					list.sort(([, { order: a }], [, { order: b }]) => a - b);
-					sharedList = list;
+			rep.subscribe(
+				async (tx) =>
+					(await tx.scan({ prefix: "message/" }).entries().toArray()) as [string, Message][],
+				{
+					onData: (list) => {
+						list.sort(([, { order: a }], [, { order: b }]) => a - b);
+						sharedList = list;
+					}
 				}
-			}
-		);
+			);
 
-		setInterval(() => {
-			rep.pull();
-		}, 2000);
+			/*
+			console.log("listening");
 
-		userValue = getCookie("chatName");
+			Pusher.logToConsole = true;
+			const pusher = new Pusher(PUBLIC_SOKETI_PUSHER_KEY, {
+				wsHost: PUBLIC_SOKETI_PUSHER_HOST,
+				cluster: "Replichat",
+				wsPort: 443,
+				wssPort: 443,
+				forceTLS: true,
+				disableStats: true,
+				enabledTransports: ["ws", "wss"]
+			});
+			const channel = pusher.subscribe("chat");
+			channel.bind("poke", () => {
+				console.log("got poked");
+				rep.pull();
+			});
+*/
+			userValue = getCookie("chatName");
 
-		setTimeout(() => {
-			chatWindow.scrollTop = chatWindow.scrollHeight;
-		}, 100);
-
-		return () => {
-			websocket.close();
-			rep.close();
-		};
+			setTimeout(() => {
+				chatWindow.scrollTop = chatWindow.scrollHeight;
+			}, 100);
+		}
 	});
 
 	const scrollDown = () => {
@@ -136,12 +132,10 @@
 			{/each}
 		</div>
 	</div>
-	<!--
 	<form on:submit={submitMessage} class="flex gap-3">
 		<input class="w-80 rounded-md p-2 text-slate-800" type="text" bind:value={messageValue} />
-			
+
 		<button>Send</button>
 	</form>
--->
 	<button on:click={scrollDown}>scroll</button>
 </div>

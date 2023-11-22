@@ -1,15 +1,18 @@
-import { client, db, serverId } from "$lib/drizzle/dbClient";
+import { db, serverId } from "$lib/drizzle/dbClient";
 import { replicache_client, replicache_server, test_messages } from "$lib/drizzle/schema";
+import { env } from "$env/dynamic/private";
+import { PUBLIC_SOKETI_PUSHER_KEY, PUBLIC_SOKETI_PUSHER_HOST } from "$env/static/public";
 
 import type { MessageWithID } from "$lib/types";
 import { json, type RequestEvent } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
-import type { MutationV1, PushRequest, PushRequestV1 } from "replicache";
+import type { PushRequestV1 } from "replicache";
+
+import Pusher from "pusher";
 
 export async function POST({ request }: RequestEvent) {
+	console.log("processing push");
 	const push: PushRequestV1 = await request.json();
-
-	console.log("processing push", JSON.stringify(push));
 
 	const t0 = Date.now();
 	try {
@@ -98,6 +101,10 @@ export async function POST({ request }: RequestEvent) {
 			}
 		}
 
+		await sendPoke();
+
+		console.log("poke sent");
+
 		return json({});
 	} catch (e) {
 		console.error(e);
@@ -105,4 +112,19 @@ export async function POST({ request }: RequestEvent) {
 	} finally {
 		console.log("Processed push in ", Date.now() - t0);
 	}
+}
+
+async function sendPoke() {
+	const pusher = new Pusher({
+		appId: env.SOKETI_PUSHER_APP_ID,
+		key: PUBLIC_SOKETI_PUSHER_KEY,
+		secret: env.SOKETI_PUSHER_SECRET,
+		host: PUBLIC_SOKETI_PUSHER_HOST,
+		cluster: "Replichat",
+		port: "433",
+		useTLS: true
+	});
+	const t0 = Date.now();
+	await pusher.trigger("chat", "poke", {});
+	console.log("Sent poke in", Date.now() - t0);
 }
