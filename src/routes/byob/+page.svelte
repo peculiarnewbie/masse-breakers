@@ -62,10 +62,13 @@
 			rep.mutate.deleteMessage({ id: message[0] });
 		});
 		*/
-		sharedList.forEach((message) => {
-			let deleteId = message[0].split("/").slice(1).join("");
-			rep.mutate.deleteMessage({ id: deleteId });
+		const deleteList: string[] = [];
+
+		sharedList.forEach(([id, message]) => {
+			deleteList.push(id);
 		});
+
+		rep.mutate.deleteMessage(deleteList);
 	};
 
 	onMount(() => {
@@ -75,9 +78,14 @@
 			pushURL: "/api/replicache/test-push",
 			pullURL: "/api/replicache/test-pull",
 			mutators: {
-				async deleteMessage(tx: WriteTransaction, { id }: { id: string }) {
-					console.log("deleting");
-					await tx.del(`message/${id}`);
+				async deleteMessage(tx: WriteTransaction, ids: string[]) {
+					console.log("deleting", ids);
+					let tasks: Promise<boolean>[] = [];
+					ids.forEach((id) => {
+						tasks.push(tx.del(id));
+					});
+					const res = await Promise.all(tasks);
+					console.log("deleted: ", res);
 				},
 				async createMessage(tx: WriteTransaction, { id, from, content, order }: MessageWithID) {
 					await tx.put(`message/${id}`, {

@@ -5,14 +5,14 @@ import { PUBLIC_SOKETI_PUSHER_KEY, PUBLIC_SOKETI_PUSHER_HOST } from "$env/static
 
 import type { MessageWithID } from "$lib/types";
 import { json, type RequestEvent } from "@sveltejs/kit";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { PushRequestV1 } from "replicache";
 
 import Pusher from "pusher";
 
 export async function POST({ request }: RequestEvent) {
-	console.log("processing push");
 	const push: PushRequestV1 = await request.json();
+	console.log("processing push", push);
 
 	const t0 = Date.now();
 	try {
@@ -51,7 +51,6 @@ export async function POST({ request }: RequestEvent) {
 							`Mutation ${mutation.id} is from the future - aborting. This can happen in development if the server restarts. In that case, clear appliation data in browser and refresh.`
 						);
 					}
-
 					let args = mutation.args as MessageWithID;
 
 					switch (mutation.name) {
@@ -66,11 +65,16 @@ export async function POST({ request }: RequestEvent) {
 							});
 							break;
 						case "deleteMessage":
-							console.log("deleting", args.id);
+							const deleteIds: string[] = [];
+							let Ids = mutation.args as string[];
+							Ids.forEach((id) => {
+								deleteIds.push(id.split("/").slice(1).join(""));
+							});
+							console.log("deleting", deleteIds);
 							await db
 								.update(test_messages)
 								.set({ deleted: 1, version: nextVersion })
-								.where(eq(test_messages.id, args.id));
+								.where(inArray(test_messages.id, deleteIds));
 							break;
 						default:
 							throw new Error(`Unknown mutation: ${mutation.name}`);
