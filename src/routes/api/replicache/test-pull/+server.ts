@@ -15,12 +15,17 @@ export async function POST({ request }: RequestEvent) {
 
 	try {
 		const response = await db.transaction(async (tx) => {
-			const currentVersion = (
+			const server = (
 				await db
-					.select({ version: replicache_server.version })
+					.select({
+						version: replicache_server.version,
+						lastDeleted: replicache_server.last_deleted
+					})
 					.from(replicache_server)
 					.where(eq(replicache_server.id, serverId))
-			)[0].version;
+			)[0];
+
+			const currentVersion = server.version;
 
 			console.log("from: ", fromVersion, "current: ", currentVersion);
 
@@ -37,6 +42,8 @@ export async function POST({ request }: RequestEvent) {
 					};
 				}
 			}
+
+			const lastDeleted = server.lastDeleted;
 
 			const changesRow = await db
 				.select({
@@ -74,27 +81,29 @@ export async function POST({ request }: RequestEvent) {
 				.from(test_messages)
 				.where(gt(test_messages.version, fromVersion));
 
-			console.log(fromVersion, changed);
+			console.log("messages changed from: ", fromVersion, changed);
 
 			const patch: PatchOperation[] = [];
 
 			for (const row of changed) {
-				if (row.deleted) {
-					if (row.version > fromVersion) {
-						patch.push({ op: "del", key: `message/${row.id}` });
+				patch.push({
+					op: "put",
+					key: `message/${row.id}`,
+					value: {
+						from: row.sender,
+						content: row.content,
+						order: row.order,
+						version: row.version
 					}
-				} else {
-					patch.push({
-						op: "put",
-						key: `message/${row.id}`,
-						value: {
-							from: row.sender,
-							content: row.content,
-							order: row.order
-						}
-					});
-				}
+				});
 			}
+
+			console.log("adding to patch lastDeleted: ", lastDeleted);
+			patch.push({
+				op: "put",
+				key: `last_deleted`,
+				value: lastDeleted
+			});
 
 			const body: PullResponseV1 = {
 				lastMutationIDChanges: lastMutationIdChanges ?? {},

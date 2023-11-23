@@ -11,7 +11,8 @@ import {
 
 export const replicache_server = sqliteTable("replicache_server", {
 	id: integer("id").notNull().primaryKey(),
-	version: integer("version")
+	version: integer("version"),
+	last_deleted: integer("last_deleted")
 });
 
 export const replicache_client = sqliteTable("replicache_client", {
@@ -26,7 +27,6 @@ export const test_messages = sqliteTable("test_messages", {
 	sender: text("sender").notNull(),
 	content: text("content").notNull(),
 	order: integer("order").notNull(),
-	deleted: integer("deleted").notNull(),
 	version: integer("version").notNull()
 });
 

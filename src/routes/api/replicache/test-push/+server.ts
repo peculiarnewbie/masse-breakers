@@ -5,7 +5,7 @@ import { PUBLIC_SOKETI_PUSHER_KEY, PUBLIC_SOKETI_PUSHER_HOST } from "$env/static
 
 import type { MessageWithID } from "$lib/types";
 import { json, type RequestEvent } from "@sveltejs/kit";
-import { eq } from "drizzle-orm";
+import { eq, gt } from "drizzle-orm";
 import type { PushRequestV1 } from "replicache";
 
 import Pusher from "pusher";
@@ -16,7 +16,12 @@ export async function POST({ request }: RequestEvent) {
 
 	const t0 = Date.now();
 	try {
+		let isManualOnly = true;
 		for (const mutation of push.mutations) {
+			if (isManualOnly && mutation.name !== "manualDelete") {
+				isManualOnly = false;
+				console.log("accessing db");
+			}
 			const t1 = Date.now();
 			const groupId = push.clientGroupID;
 
@@ -61,16 +66,18 @@ export async function POST({ request }: RequestEvent) {
 								sender: args.from,
 								content: args.content,
 								order: args.order,
-								deleted: 0,
 								version: nextVersion
 							});
 							break;
 						case "deleteMessage":
-							console.log("deleting", args.id);
+							console.log("deleting all messages");
+							await db.delete(test_messages).where(gt(test_messages.version, 0));
 							await db
-								.update(test_messages)
-								.set({ deleted: 1, version: nextVersion })
-								.where(eq(test_messages.id, args.id));
+								.update(replicache_server)
+								.set({ version: nextVersion, last_deleted: nextVersion });
+							break;
+						case "manualDelete":
+							console.log("just manually deleting lol");
 							break;
 						default:
 							throw new Error(`Unknown mutation: ${mutation.name}`);
@@ -102,17 +109,20 @@ export async function POST({ request }: RequestEvent) {
 			}
 		}
 
-		// await sendPoke();
-		const pusher = new Pusher({
-			appId: env.SOKETI_PUSHER_APP_ID,
-			key: PUBLIC_SOKETI_PUSHER_KEY,
-			secret: env.SOKETI_PUSHER_SECRET,
-			host: PUBLIC_SOKETI_PUSHER_HOST,
-			cluster: "Replichat",
-			useTLS: true
-		});
-		const t0 = Date.now();
-		await pusher.trigger("chat", "poke", {});
+		if (!isManualOnly) {
+			// await sendPoke();
+			const pusher = new Pusher({
+				appId: env.SOKETI_PUSHER_APP_ID,
+				key: PUBLIC_SOKETI_PUSHER_KEY,
+				secret: env.SOKETI_PUSHER_SECRET,
+				host: PUBLIC_SOKETI_PUSHER_HOST,
+				cluster: "Replichat",
+				useTLS: true
+			});
+			const t0 = Date.now();
+			await pusher.trigger("chat", "poke", {});
+		}
+
 		console.log("Sent poke in", Date.now() - t0);
 
 		return json({});

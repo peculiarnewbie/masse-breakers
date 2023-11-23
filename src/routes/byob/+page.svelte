@@ -1,12 +1,19 @@
 <script lang="ts">
 	import "../../app.css";
-	import { Replicache, dropAllDatabases, type WriteTransaction } from "replicache";
+	import {
+		Replicache,
+		dropAllDatabases,
+		type WriteTransaction,
+		version,
+		type ReadTransaction
+	} from "replicache";
 	import { env } from "$env/dynamic/public";
 	import { onMount } from "svelte";
 	import type { Message, MessageWithID } from "$lib/types";
 	import { nanoid } from "nanoid";
 	import { PUBLIC_SOKETI_PUSHER_HOST, PUBLIC_SOKETI_PUSHER_KEY } from "$env/static/public";
 	import Pusher from "pusher-js";
+	import { text } from "@sveltejs/kit";
 
 	let rep: Replicache;
 	let name = "dbName";
@@ -33,39 +40,46 @@
 		return "";
 	}
 
-	const submitMessage = (e: SubmitEvent) => {
+	const submitMessage = async (e: SubmitEvent) => {
 		e.preventDefault();
-
-		console.log("push message");
 
 		const last = sharedList.length && sharedList[sharedList.length - 1][1];
 		const order = (last?.order ?? 0) + 1;
+
+		const lastDeleted = (await rep.query(
+			async (tx: ReadTransaction) => await tx.get("last_deleted")
+		)) as number | undefined;
 
 		rep.mutate.createMessage({
 			id: nanoid(),
 			from: userValue,
 			content: messageValue,
-			order: order
+			order: order,
+			version: lastDeleted ? lastDeleted + 1 : 1
 		});
 		messageValue = "";
-
-		console.log("mutated?");
 
 		setTimeout(() => {
 			chatWindow.scrollTop = chatWindow.scrollHeight;
 		}, 100);
 	};
 
-	const clearAll = () => {
+	const clearAll = async () => {
 		/*
 		sharedList.forEach((message) => {
 			rep.mutate.deleteMessage({ id: message[0] });
 		});
 		*/
-		sharedList.forEach((message) => {
-			let deleteId = message[0].split("/").slice(1).join("");
-			rep.mutate.deleteMessage({ id: deleteId });
-		});
+		const lastDeleted = (await rep.query(
+			async (tx: ReadTransaction) => await tx.get("last_deleted")
+		)) as number | undefined;
+		console.log("lastDeleted: ", lastDeleted);
+		rep.mutate.deleteMessage(lastDeleted ? lastDeleted + 1 : 0);
+	};
+
+	const checkDeletion = async (lastDeleted: number) => {
+		console.log("checking deletion");
+		await rep.mutate.manualDelete(lastDeleted);
 	};
 
 	onMount(() => {
@@ -75,16 +89,31 @@
 			pushURL: "/api/replicache/test-push",
 			pullURL: "/api/replicache/test-pull",
 			mutators: {
-				async deleteMessage(tx: WriteTransaction, { id }: { id: string }) {
-					console.log("deleting");
-					await tx.del(`message/${id}`);
-				},
-				async createMessage(tx: WriteTransaction, { id, from, content, order }: MessageWithID) {
+				async createMessage(
+					tx: WriteTransaction,
+					{ id, from, content, order, version }: MessageWithID
+				) {
 					await tx.put(`message/${id}`, {
 						from,
 						content,
-						order
+						order,
+						version
 					});
+				},
+				async deleteMessage(tx: WriteTransaction, update: number) {
+					await tx.put(`last_deleted`, update);
+				},
+				async manualDelete(tx: WriteTransaction, update: number) {
+					const tasks: Promise<boolean>[] = [];
+					sharedList.forEach(([id, message]) => {
+						console.log("evaluating message: ", message.version, " vs lastDeleted: ", update);
+						if (message.version <= update) {
+							console.log("deleted message ", id);
+							tasks.push(tx.del(id));
+						}
+					});
+					const deleteResult = await Promise.all(tasks);
+					console.log("deleteResult: ", deleteResult);
 				}
 			}
 		});
@@ -103,9 +132,17 @@
 				}
 			);
 
+			rep.subscribe(async (tx) => await tx.get("last_deleted"), {
+				onData: (update) => {
+					if (update) {
+						console.log("update last deleted: ", update);
+						checkDeletion(update);
+					}
+				}
+			});
+
 			console.log("listening");
 
-			Pusher.logToConsole = true;
 			const pusher = new Pusher(PUBLIC_SOKETI_PUSHER_KEY, {
 				wsHost: PUBLIC_SOKETI_PUSHER_HOST,
 				cluster: "Replichat",
