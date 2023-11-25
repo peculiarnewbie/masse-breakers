@@ -9,9 +9,16 @@ import {
 	uniqueIndex
 } from "drizzle-orm/sqlite-core";
 
-export const replicache_server = sqliteTable("replicache_server", {
-	id: integer("id").notNull().primaryKey(),
-	version: integer("version")
+export const replicache_space = sqliteTable("replicache_space", {
+	id: text("id").notNull().primaryKey(),
+	version: integer("version"),
+	type: text("type")
+});
+
+export const replicache_client_group = sqliteTable("replicache_client_group", {
+	id: text("id").notNull().primaryKey(),
+	userId: text("user_id").notNull(),
+	spaceId: text("space_id").notNull()
 });
 
 export const replicache_client = sqliteTable("replicache_client", {
@@ -21,13 +28,24 @@ export const replicache_client = sqliteTable("replicache_client", {
 	version: integer("version").notNull()
 });
 
-export const test_messages = sqliteTable("test_messages", {
+export const rps_room = sqliteTable("rps_room", {
 	id: text("id").notNull().primaryKey(),
-	sender: text("sender").notNull(),
-	content: text("content").notNull(),
-	order: integer("order").notNull(),
-	deleted: integer("deleted").notNull(),
-	version: integer("version").notNull()
+	roomName: text("room_name").notNull(),
+	spaceId: text("space_id").notNull(),
+	adminId: text("admin_id").notNull(),
+	type: text("type").notNull(),
+	round: integer("round").notNull(),
+	lastRoundChange: integer("last_round_change")
+});
+
+export const rps_player = sqliteTable("rps_player", {
+	id: text("id").notNull().primaryKey(),
+	userId: text("user_id").notNull(),
+	username: text("username").notNull(),
+	spaceId: text("space_id").notNull(),
+	round: integer("round"),
+	lastChoice: integer("last_choice"),
+	matchup: integer("matchup")
 });
 
 export const analytics = sqliteTable("analytics", {
@@ -37,12 +55,9 @@ export const analytics = sqliteTable("analytics", {
 	qty: integer("qty")
 });
 
-export type ReplicacheServer = typeof replicache_server.$inferSelect;
+export type ReplicacheServer = typeof replicache_space.$inferSelect;
 
 export type ReplicacheClient = typeof replicache_client.$inferSelect;
 export type InsertReplicacheClient = typeof replicache_client.$inferInsert;
-
-export type TestMessages = typeof test_messages.$inferSelect;
-export type InsertTestMessages = typeof test_messages.$inferInsert;
 
 export type InsertAnalytics = typeof analytics.$inferInsert;

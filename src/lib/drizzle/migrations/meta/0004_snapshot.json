@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "9776d2ea-0bc4-42b9-9dea-09c0b6d52c03",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "5f2eba95-8408-4a18-a7a7-95e8facf81dc",
+  "prevId": "1d0e1bba-5783-4e78-ac00-a59fb4059e7b",
   "tables": {
     "analytics": {
       "name": "analytics",
@@ -108,8 +108,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "replicache_server": {
-      "name": "replicache_server",
+    "replicache_space": {
+      "name": "replicache_space",
       "columns": {
         "id": {
           "name": "id",
@@ -182,6 +182,13 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "matchup": {
+          "name": "matchup",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -194,6 +201,13 @@
       "columns": {
         "id": {
           "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "room_name": {
+          "name": "room_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -208,6 +222,13 @@
         },
         "admin_id": {
           "name": "admin_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
