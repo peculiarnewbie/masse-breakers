@@ -55,4 +55,3 @@ export async function POST({ request }: RequestEvent) {
 	if (foundRoom[0] && space[0]) status = 200;
 	console.log("server", foundRoom[0].id, "in", Date.now() - t0);
 	return json({ room: foundRoom[0], space: space[0] }, { status: status });
-}

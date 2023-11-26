@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "9776d2ea-0bc4-42b9-9dea-09c0b6d52c03",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "12dae3ae-b3c4-494e-92d7-ef07f0c12d27",
+  "prevId": "9dfbe266-2c9f-4483-9abd-11ab65af7a31",
   "tables": {
     "analytics": {
       "name": "analytics",
@@ -108,8 +108,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "replicache_server": {
-      "name": "replicache_server",
+    "replicache_space": {
+      "name": "replicache_space",
       "columns": {
         "id": {
           "name": "id",
@@ -178,6 +178,13 @@
         },
         "last_choice": {
           "name": "last_choice",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "matchup": {
+          "name": "matchup",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,

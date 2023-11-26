@@ -14,6 +14,12 @@ export const replicache_space = sqliteTable("replicache_space", {
 	version: integer("version")
 });
 
+export const replicache_client_group = sqliteTable("replicache_client_group", {
+	id: text("id").notNull().primaryKey(),
+	userId: text("user_id").notNull(),
+	spaceId: text("space_id").notNull()
+});
+
 export const replicache_client = sqliteTable("replicache_client", {
 	id: text("id").notNull().primaryKey(),
 	client_group_id: text("client_group_id").notNull(),
