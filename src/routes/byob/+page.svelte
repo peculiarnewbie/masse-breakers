@@ -1,5 +1,5 @@
 <script lang="ts">
-	import "../../app.css";
+	import "$lib/app.css";
 	import { Replicache, dropAllDatabases, type WriteTransaction } from "replicache";
 	import { env } from "$env/dynamic/public";
 	import { onMount } from "svelte";

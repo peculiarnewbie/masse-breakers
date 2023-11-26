@@ -1,3 +1,4 @@
+/*
 import { db, serverId } from "$lib/drizzle/dbClient";
 import { replicache_client, replicache_server, test_messages } from "$lib/drizzle/schema";
 import { env } from "$env/dynamic/private";
@@ -127,3 +128,4 @@ export async function POST({ request }: RequestEvent) {
 		console.log("Processed push in ", Date.now() - t0);
 	}
 }
+*/

@@ -1,67 +1,61 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import "../app.css";
+	import { goto } from "$app/navigation";
+	import "$lib/app.css";
 
-	let personName: string = "";
-	let warning: string = "";
+	let roomInput = $state("");
+	let isSendingRoom = $state(false);
 
-	function getCookie(cname: string) {
-		let name = cname + "=";
-		let decodedCookie = decodeURIComponent(document.cookie);
-		let ca = decodedCookie.split(";");
-		for (let i = 0; i < ca.length; i++) {
-			let c = ca[i];
-			while (c.charAt(0) == " ") {
-				c = c.substring(1);
-			}
-			if (c.indexOf(name) == 0) {
-				return c.substring(name.length, c.length);
-			}
-		}
-		return "";
-	}
+	let { data, form } = $props();
 
-	const createRoom = async () => {
-		const result = await fetch("../api/createRoom", {
+	const createRoom = () => {
+		isSendingRoom = true;
+	};
+
+	const joinRoom = async () => {
+		const request = {
+			roomName: roomInput,
+			userId: "user"
+		};
+		const result = await fetch("/api/db/checkRoom", {
+			body: JSON.stringify(request),
 			method: "POST"
 		});
 
-		console.log(result);
+		const body = await result.json();
+		const room = body.room;
+		console.log(body);
+
+		isSendingRoom = false;
+
+		goto(`/${room.type}/${room.roomName}`);
 	};
-
-	const joinRoom = async (e: SubmitEvent) => {
-		e.preventDefault();
-		if (personName == "Bolt" || personName == "bolt") {
-			warning = "no u ain't";
-			return;
-		} else {
-			warning = "";
-		}
-
-		document.cookie = `chatName=${personName};`;
-		window.location.href = "/byob";
-	};
-
-	onMount(() => {
-		personName = getCookie("chatName");
-	});
 </script>
 
-<div class="h-screen w-screen bg-black p-12 text-slate-200">
-	<h1>Enter your name</h1>
-	<!--
-	-->
-
-	{#if warning != ""}
-		<p class=" text-red-400">{warning}</p>
-	{/if}
-	<form on:submit={joinRoom}>
+<div
+	class="flex h-screen w-screen flex-col items-center justify-center bg-black p-12 text-slate-200"
+>
+	<p>Enter room name</p>
+	<div class="p-2" />
+	<form
+		method="POST"
+		class={`flex h-24 w-full max-w-xs flex-col items-center transition-all duration-100 ${
+			isSendingRoom ? "gap-0" : "gap-4"
+		}`}
+		on:submit={createRoom}
+	>
 		<input
-			class="rounded-md p-2 text-slate-600"
+			class={`w-full rounded-md p-2 text-center text-slate-800 transition-all duration-100 ${
+				isSendingRoom ? "h-0 p-0 opacity-0" : "h-12 opacity-100"
+			}`}
 			type="text"
-			name="chatName"
-			bind:value={personName}
+			name="roomName"
+			bind:value={roomInput}
 		/>
-		<button class="rounded-md bg-slate-800 px-6 py-2"> Chat Room </button>
+		<button
+			class={` rounded-md bg-slate-800 px-4 py-2 transition-all duration-100 ${
+				isSendingRoom ? "h-full w-full" : "h-fit w-24"
+			}`}>{`${isSendingRoom ? "Joining..." : "Enter"}`}</button
+		>
 	</form>
+	<div class="p-8" />
 </div>

@@ -1,3 +1,4 @@
+/*
 import { json, type RequestEvent } from "@sveltejs/kit";
 import { db, serverId } from "$lib/drizzle/dbClient";
 import type { PatchOperation, PullRequestV1, PullResponseV1 } from "replicache";
@@ -113,3 +114,4 @@ export async function POST({ request }: RequestEvent) {
 		console.log("Processed pull in ", Date.now(), t0);
 	}
 }
+*/
