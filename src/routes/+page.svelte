@@ -5,10 +5,11 @@
 	let roomInput = $state("");
 	let isSendingRoom = $state(false);
 
-	let { data, form } = $props();
-
-	const createRoom = () => {
+	const createRoom = (e: SubmitEvent) => {
+		e.preventDefault();
 		isSendingRoom = true;
+
+		joinRoom();
 	};
 
 	const joinRoom = async () => {
@@ -25,9 +26,11 @@
 		const room = body.room;
 		console.log(body);
 
-		isSendingRoom = false;
-
-		goto(`/${room.type}/${room.roomName}`);
+		if (result.status == 200) {
+			goto(`/${room.type}/${room.roomName}`);
+		} else {
+			isSendingRoom = false;
+		}
 	};
 </script>
 
@@ -37,11 +40,10 @@
 	<p>Enter room name</p>
 	<div class="p-2" />
 	<form
-		method="POST"
 		class={`flex h-24 w-full max-w-xs flex-col items-center transition-all duration-100 ${
 			isSendingRoom ? "gap-0" : "gap-4"
 		}`}
-		on:submit={createRoom}
+		onsubmit={createRoom}
 	>
 		<input
 			class={`w-full rounded-md p-2 text-center text-slate-800 transition-all duration-100 ${
@@ -49,6 +51,7 @@
 			}`}
 			type="text"
 			name="roomName"
+			required
 			bind:value={roomInput}
 		/>
 		<button

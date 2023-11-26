@@ -1,4 +1,4 @@
-import { json } from "@sveltejs/kit";
+import { fail, json, type HttpError } from "@sveltejs/kit";
 import { db } from "$lib/drizzle/dbClient";
 import {
 	replicache_space,
@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export const actions = {
-	default: async ({ cookies, request }) => {
+	join: async ({ cookies, request }) => {
 		let status = 500;
 		const t0 = Date.now();
 		const data = await request.formData();
@@ -22,38 +22,43 @@ export const actions = {
 
 		let space: ReplicacheSpace[];
 		let foundRoom: RPSRoom[];
-		if (room[0]) {
-			foundRoom = room;
+		try {
+			if (room[0]) {
+				foundRoom = room;
 
-			// get all state
+				// get all state
 
-			space = await db
-				.select({
-					id: replicache_space.id,
-					type: replicache_space.type,
-					version: replicache_space.version
-				})
-				.from(replicache_space)
-				.where(eq(replicache_space.id, room[0].spaceId));
-		} else {
-			// create room
-			const spaceToInsert = {
-				id: nanoid(),
-				version: 0,
-				type: "rps"
-			};
-			space = await db.insert(replicache_space).values(spaceToInsert).returning();
+				space = await db
+					.select({
+						id: replicache_space.id,
+						version: replicache_space.version
+					})
+					.from(replicache_space)
+					.where(eq(replicache_space.id, room[0].spaceId));
+			} else {
+				// create room
+				const spaceToInsert = {
+					id: nanoid(),
+					version: 0
+				};
+				space = await db.insert(replicache_space).values(spaceToInsert).returning();
 
-			// if room is rps
-			const roomToInsert = {
-				id: nanoid(),
+				// if room is rps
+				const roomToInsert = {
+					id: nanoid(),
+					roomName: roomName,
+					adminId: userId,
+					spaceId: spaceToInsert.id,
+					type: "rps",
+					round: 0
+				};
+				foundRoom = await db.insert(rps_room).values(roomToInsert).returning();
+			}
+		} catch (error) {
+			return fail(422, {
 				roomName: roomName,
-				adminId: userId,
-				spaceId: spaceToInsert.id,
-				type: "rps",
-				round: 0
-			};
-			foundRoom = await db.insert(rps_room).values(roomToInsert).returning();
+				error: error
+			});
 		}
 
 		if (foundRoom[0] && space[0]) {

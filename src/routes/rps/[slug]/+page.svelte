@@ -7,5 +7,8 @@
 </script>
 
 <div class="text-slate-200">
-	{data.roomName}
+	<p>
+		room: {data.roomName}
+	</p>
+	<p>role: {data.role}</p>
 </div>
