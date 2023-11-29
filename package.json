@@ -40,7 +40,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@gomomento/sdk": "^1.51.1",
     "@gomomento/sdk-web": "^1.51.1",
     "@libsql/client": "^0.4.0-pre.1",
     "dotenv": "^16.3.1",

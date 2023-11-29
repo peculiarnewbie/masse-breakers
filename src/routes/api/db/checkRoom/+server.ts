@@ -3,14 +3,7 @@ import { db } from "$lib/drizzle/dbClient";
 import { replicache_space, rps_room } from "$lib/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import {
-	AuthClient,
-	CredentialProvider,
-	DisposableTokenScopes,
-	ExpiresIn,
-	GenerateDisposableToken
-} from "@gomomento/sdk";
-import { MOMENTO_API_KEY } from "$env/static/private";
+import { MOMENTO_LAMBDA_FUNCTION_URL } from "$env/static/private";
 
 export async function POST({ request, cookies }) {
 	let status = 500;
@@ -43,32 +36,22 @@ export async function POST({ request, cookies }) {
 		};
 		space = await db.insert(replicache_space).values(spaceToInsert).returning();
 
-		// create momento disposable token
-		const authClient = new AuthClient({
-			credentialProvider: CredentialProvider.fromString({ apiKey: MOMENTO_API_KEY })
-		});
-
+		// get key from lambda function
 		let pubsubToken: string = "";
 
-		const oneKeyOneCacheToken = await authClient.generateDisposableToken(
-			// minutes should change according to game type
-			// topic name should be room name
-			DisposableTokenScopes.topicPublishSubscribe("masse-breakers", "players"),
-			ExpiresIn.minutes(30)
-		);
-		if (oneKeyOneCacheToken instanceof GenerateDisposableToken.Success) {
-			console.log(
-				'Generated a disposable API key with access to the "players" key in the "masse-breakers" cache!'
-			);
-			// logging only a substring of the tokens, because logging security credentials is not advisable :)
-			console.log(`API key starts with: ${oneKeyOneCacheToken.authToken.substring(0, 10)}`);
-			console.log(`Expires At: ${oneKeyOneCacheToken.expiresAt.epoch()}`);
-			pubsubToken = oneKeyOneCacheToken.authToken;
-		} else if (oneKeyOneCacheToken instanceof GenerateDisposableToken.Error) {
-			throw new Error(
-				`An error occurred while attempting to call generateApiKey with disposable token scope: ${oneKeyOneCacheToken.errorCode()}: ${oneKeyOneCacheToken.toString()}`
-			);
-		}
+		const postBody = {
+			room: body.roomName
+		};
+
+		const resp = await fetch(MOMENTO_LAMBDA_FUNCTION_URL, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(postBody)
+		});
+
+		pubsubToken = (await resp.json()).token;
+
+		console.log("token object from lambda: ", pubsubToken);
 
 		// if room is rps
 		const roomToInsert = {
