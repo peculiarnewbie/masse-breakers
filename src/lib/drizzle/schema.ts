@@ -32,9 +32,11 @@ export const rps_room = sqliteTable("rps_room", {
 	roomName: text("room_name").notNull().unique(),
 	spaceId: text("space_id").notNull(),
 	adminId: text("admin_id").notNull(),
+	pubsubToken: text("pubsub_token"),
 	type: text("type").notNull(),
 	round: integer("round").notNull(),
-	lastRoundChange: integer("last_round_change")
+	lastRoundChange: integer("last_round_change"),
+	canJoin: integer("can_join")
 });
 
 export const rps_player = sqliteTable("rps_player", {
@@ -53,14 +55,3 @@ export const analytics = sqliteTable("analytics", {
 	month: text("month").notNull(),
 	qty: integer("qty")
 });
-
-export type ReplicacheSpace = typeof replicache_space.$inferSelect;
-export type InsertReplicacheSpace = typeof replicache_client.$inferInsert;
-
-export type RPSRoom = typeof rps_room.$inferSelect;
-export type InsertRPSRoom = typeof rps_room.$inferInsert;
-
-export type ReplicacheClient = typeof replicache_client.$inferSelect;
-export type InsertReplicacheClient = typeof replicache_client.$inferInsert;
-
-export type InsertAnalytics = typeof analytics.$inferInsert;

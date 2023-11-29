@@ -1,11 +1,6 @@
 import { fail, json, type HttpError } from "@sveltejs/kit";
 import { db } from "$lib/drizzle/dbClient";
-import {
-	replicache_space,
-	rps_room,
-	type ReplicacheSpace,
-	type RPSRoom
-} from "$lib/drizzle/schema";
+import { replicache_space, rps_room } from "$lib/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -20,8 +15,8 @@ export const actions = {
 
 		const room = await db.select().from(rps_room).where(eq(rps_room.roomName, roomName));
 
-		let space: ReplicacheSpace[];
-		let foundRoom: RPSRoom[];
+		let space: (typeof replicache_space.$inferSelect)[];
+		let foundRoom: (typeof rps_room.$inferSelect)[];
 		try {
 			if (room[0]) {
 				foundRoom = room;

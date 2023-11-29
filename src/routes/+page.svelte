@@ -27,7 +27,7 @@
 		console.log(body);
 
 		if (result.status == 200) {
-			goto(`/${room.type}/${room.roomName}`);
+			await goto(`/${room.type}/${room.roomName}`);
 		} else {
 			isSendingRoom = false;
 		}
