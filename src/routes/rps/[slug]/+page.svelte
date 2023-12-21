@@ -69,7 +69,7 @@
 	</p>
 	<p>role: {data.role}</p>
 
-	<div class=" flex flex-col rounded-md bg-slate-800 p-2">
+	<div class="flex flex-col rounded-md bg-slate-800 p-2">
 		{#each players as player}
 			<p>{player}</p>
 		{/each}
